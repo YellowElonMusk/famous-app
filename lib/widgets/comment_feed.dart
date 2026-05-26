@@ -4,16 +4,19 @@ import '../models/fake_data.dart';
 class CommentFeed extends StatelessWidget {
   final List<FakeComment> comments;
   final Color usernameColor;
+  final ScrollController? scrollController;
 
   const CommentFeed({
     super.key,
     required this.comments,
     this.usernameColor = Colors.white,
+    this.scrollController,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      controller: scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       itemCount: comments.length,
       itemBuilder: (_, i) {
@@ -37,25 +40,32 @@ class CommentFeed extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '${c.username} ',
-                        style: TextStyle(
-                          color: usernameColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${c.username} ',
+                          style: TextStyle(
+                            color: usernameColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
-                      ),
-                      TextSpan(
-                        text: c.text,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
+                        TextSpan(
+                          text: c.text,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

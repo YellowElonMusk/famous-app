@@ -56,7 +56,6 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
       _isLive = true;
       _viewers = 12800;
     });
-
     _commentTimer = Timer.periodic(
       Duration(milliseconds: 700 + _rng.nextInt(1000)),
       (_) => _addComment(),
@@ -68,7 +67,6 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
       Duration(milliseconds: 1200 + _rng.nextInt(1500)),
       (_) => _heartsKey.currentState?.addHeart(),
     );
-
     for (int i = 0; i < 5; i++) {
       Future.delayed(Duration(milliseconds: i * 150), _addComment);
     }
@@ -84,15 +82,11 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
   void _addComment() {
     setState(() {
       _comments.add(randomComment());
-      if (_comments.length > 50) _comments.removeAt(0);
+      if (_comments.length > 60) _comments.removeAt(0);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }
@@ -107,20 +101,36 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
     super.dispose();
   }
 
+  Widget _buildCamera() {
+    if (!_cameraReady || _camera == null) return Container(color: Colors.black);
+    final previewSize = _camera!.value.previewSize;
+    if (previewSize == null) return CameraPreview(_camera!);
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: previewSize.height,
+          height: previewSize.width,
+          child: CameraPreview(_camera!),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final botPad = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Camera preview
-          if (_cameraReady && _camera != null)
-            CameraPreview(_camera!)
-          else
-            Container(color: Colors.black87),
+          // ── Camera fills full screen ──────────────────────────
+          _buildCamera(),
 
-          // Top gradient overlay
+          // ── Top gradient scrim ────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0, height: 200,
             child: Container(
@@ -134,9 +144,9 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
             ),
           ),
 
-          // Bottom gradient overlay
+          // ── Bottom gradient scrim ─────────────────────────────
           Positioned(
-            bottom: 0, left: 0, right: 0, height: 360,
+            bottom: 0, left: 0, right: 0, height: 380,
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -148,29 +158,29 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
             ),
           ),
 
-          // Top bar
-          SafeArea(
+          // ── TOP BAR – always anchored at top ─────────────────
+          Positioned(
+            top: topPad + 10,
+            left: 0,
+            right: 0,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Back
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 10),
-                  // Avatar
+                  // Avatar with cyan ring
                   Container(
-                    width: 38, height: 38,
+                    width: 40, height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFF69C9D0), width: 2),
-                      color: Colors.grey[800],
+                      color: Colors.grey[850],
                     ),
                     child: const Icon(Icons.person, color: Colors.white, size: 22),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
+
+                  // Username + live/viewers row
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,80 +188,94 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
                       children: [
                         const Text(
                           'your_username',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+                          ),
                         ),
-                        if (_isLive)
+                        if (_isLive) ...[
+                          const SizedBox(height: 3),
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.red,
                                   borderRadius: BorderRadius.circular(3),
                                 ),
                                 child: const Text(
                                   'LIVE',
-                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Row(
-                                children: [
-                                  const Icon(Icons.remove_red_eye, color: Colors.white70, size: 12),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    formatViewers(_viewers),
-                                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                                  ),
-                                ],
+                              const Icon(Icons.remove_red_eye_outlined, color: Colors.white70, size: 12),
+                              const SizedBox(width: 3),
+                              Text(
+                                formatViewers(_viewers),
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
                               ),
                             ],
                           ),
+                        ],
                       ],
                     ),
                   ),
-                  // Follow button (decorative)
-                  if (_isLive)
+
+                  // Following pill
+                  if (_isLive) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
                         color: const Color(0xFF69C9D0),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(5),
                       ),
                       child: const Text(
                         'Following',
-                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                  const SizedBox(width: 8),
+                    const SizedBox(width: 10),
+                  ],
+
+                  // Close X
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close, color: Colors.white, size: 24),
+                    child: Container(
+                      width: 32, height: 32,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black38,
+                      ),
+                      child: const Icon(Icons.close, color: Colors.white, size: 18),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
 
-          // Right-side action buttons (TikTok style)
+          // ── Right-side action buttons ─────────────────────────
           if (_isLive)
             Positioned(
               right: 12,
-              bottom: 130,
+              bottom: botPad + 100,
               child: Column(
                 children: [
-                  _SideButton(
-                    icon: Icons.person_add,
-                    label: 'Invite',
-                    onTap: () {},
-                  ),
-                  const SizedBox(height: 20),
-                  _SideButton(
-                    icon: Icons.share,
-                    label: 'Share',
-                    onTap: () {},
-                  ),
-                  const SizedBox(height: 20),
+                  _SideButton(icon: Icons.person_add, label: 'Invite', onTap: () {}),
+                  const SizedBox(height: 22),
+                  _SideButton(icon: Icons.share, label: 'Share', onTap: () {}),
+                  const SizedBox(height: 22),
                   GestureDetector(
                     onTap: () => _heartsKey.currentState?.addHeart(),
                     child: Column(
@@ -266,21 +290,22 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
               ),
             ),
 
-          // Floating hearts overlay
+          // ── Floating hearts ───────────────────────────────────
           FloatingHeartsOverlay(key: _heartsKey),
 
-          // Comments + bottom bar
+          // ── Comments + bottom bar ─────────────────────────────
           Positioned(
-            bottom: 0, left: 0, right: 60,
+            bottom: 0, left: 0, right: 68,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_isLive)
                   SizedBox(
-                    height: 230,
+                    height: 240,
                     child: CommentFeed(
                       comments: _comments,
+                      scrollController: _scrollController,
                       usernameColor: const Color(0xFF69C9D0),
                     ),
                   ),
@@ -288,6 +313,7 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
                   isLive: _isLive,
                   onStart: _startLive,
                   onStop: _stopLive,
+                  bottomPad: botPad,
                 ),
               ],
             ),
@@ -313,7 +339,7 @@ class _SideButton extends StatelessWidget {
         children: [
           Container(
             width: 44, height: 44,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white12,
             ),
@@ -331,81 +357,92 @@ class _TikTokBottomBar extends StatelessWidget {
   final bool isLive;
   final VoidCallback onStart;
   final VoidCallback onStop;
+  final double bottomPad;
 
   const _TikTokBottomBar({
     required this.isLive,
     required this.onStart,
     required this.onStop,
+    required this.bottomPad,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: isLive
-            ? Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: Colors.white10,
-                        borderRadius: BorderRadius.circular(21),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      alignment: Alignment.centerLeft,
-                      child: const Text(
-                        'Add a comment...',
-                        style: TextStyle(color: Colors.white54, fontSize: 14),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: onStop,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'End Live',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : Center(
-                child: GestureDetector(
-                  onTap: onStart,
+    final pad = bottomPad > 0 ? bottomPad : 12.0;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14, 6, 14, pad),
+      child: isLive
+          ? Row(
+              children: [
+                Expanded(
                   child: Container(
-                    width: 180,
-                    height: 52,
+                    height: 42,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF004F), Color(0xFF69C9D0)],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white10,
+                      borderRadius: BorderRadius.circular(21),
+                      border: Border.all(color: Colors.white24),
                     ),
-                    alignment: Alignment.center,
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: const Text(
-                      'Go LIVE',
+                      'Add a comment...',
+                      style: TextStyle(color: Colors.white54, fontSize: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: onStop,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'End Live',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
                       ),
                     ),
                   ),
                 ),
+              ],
+            )
+          : Center(
+              child: GestureDetector(
+                onTap: onStart,
+                child: Container(
+                  width: 180,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF004F), Color(0xFF69C9D0)],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF004F).withOpacity(0.4),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Go LIVE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
               ),
-      ),
+            ),
     );
   }
 }

@@ -56,7 +56,6 @@ class _InstagramLiveScreenState extends State<InstagramLiveScreen> {
       _isLive = true;
       _viewers = 12400;
     });
-
     _commentTimer = Timer.periodic(
       Duration(milliseconds: 800 + _rng.nextInt(1200)),
       (_) => _addComment(),
@@ -68,7 +67,6 @@ class _InstagramLiveScreenState extends State<InstagramLiveScreen> {
       Duration(milliseconds: 1500 + _rng.nextInt(2000)),
       (_) => _heartsKey.currentState?.addHeart(),
     );
-
     for (int i = 0; i < 4; i++) {
       Future.delayed(Duration(milliseconds: i * 200), _addComment);
     }
@@ -84,15 +82,11 @@ class _InstagramLiveScreenState extends State<InstagramLiveScreen> {
   void _addComment() {
     setState(() {
       _comments.add(randomComment());
-      if (_comments.length > 50) _comments.removeAt(0);
+      if (_comments.length > 60) _comments.removeAt(0);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }
@@ -107,72 +101,102 @@ class _InstagramLiveScreenState extends State<InstagramLiveScreen> {
     super.dispose();
   }
 
+  Widget _buildCamera() {
+    if (!_cameraReady || _camera == null) {
+      return Container(color: Colors.black);
+    }
+    final previewSize = _camera!.value.previewSize;
+    if (previewSize == null) return CameraPreview(_camera!);
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: previewSize.height,
+          height: previewSize.width,
+          child: CameraPreview(_camera!),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final botPad = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Camera preview
-          if (_cameraReady && _camera != null)
-            CameraPreview(_camera!)
-          else
-            Container(color: Colors.black87),
+          // ── Camera fills full screen ──────────────────────────
+          _buildCamera(),
 
-          // Dark gradient overlays
+          // ── Top gradient scrim ────────────────────────────────
           Positioned(
-            top: 0, left: 0, right: 0,
-            height: 180,
+            top: 0, left: 0, right: 0, height: 160,
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.black.withOpacity(0.7), Colors.transparent],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            height: 320,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                  colors: [Colors.black.withOpacity(0.72), Colors.transparent],
                 ),
               ),
             ),
           ),
 
-          // Top bar
-          SafeArea(
+          // ── Bottom gradient scrim ─────────────────────────────
+          Positioned(
+            bottom: 0, left: 0, right: 0, height: 380,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [Colors.black.withOpacity(0.88), Colors.transparent],
+                ),
+              ),
+            ),
+          ),
+
+          // ── TOP BAR – always anchored at top ─────────────────
+          Positioned(
+            top: topPad + 8,
+            left: 0,
+            right: 0,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Back
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Colors.white, size: 26),
-                  ),
-                  const SizedBox(width: 10),
-                  // Profile pic placeholder
+                  // IG-gradient avatar
                   Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         colors: [Color(0xFF833AB4), Color(0xFFFD1D1D), Color(0xFFFCB045)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                     ),
-                    child: const Icon(Icons.person, color: Colors.white, size: 20),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black,
+                      ),
+                      child: const CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Color(0xFF333333),
+                        child: Icon(Icons.person, color: Colors.white, size: 18),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
+
+                  // Username + LIVE pill
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,76 +204,106 @@ class _InstagramLiveScreenState extends State<InstagramLiveScreen> {
                       children: [
                         const Text(
                           'your_username',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+                          ),
                         ),
-                        if (_isLive)
+                        if (_isLive) ...[
+                          const SizedBox(height: 3),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.red,
+                              color: const Color(0xFFE1306C),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
                               'LIVE',
-                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ),
+
+                  // Viewer count pill
                   if (_isLive) ...[
-                    // Viewer count
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.black45,
+                        color: Colors.black54,
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white12),
                       ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.remove_red_eye, color: Colors.white70, size: 14),
-                          const SizedBox(width: 4),
+                          const Icon(Icons.remove_red_eye_outlined, color: Colors.white70, size: 13),
+                          const SizedBox(width: 5),
                           Text(
                             formatViewers(_viewers),
-                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                   ],
-                  // Close
+
+                  // Close X
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close, color: Colors.white, size: 26),
+                    child: Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black38,
+                      ),
+                      child: const Icon(Icons.close, color: Colors.white, size: 18),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
 
-          // Floating hearts overlay
+          // ── Floating hearts ───────────────────────────────────
           FloatingHeartsOverlay(key: _heartsKey),
 
-          // Comments + bottom bar
+          // ── Comments + bottom bar ─────────────────────────────
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_isLive)
                   SizedBox(
-                    height: 220,
+                    height: 240,
                     child: CommentFeed(
                       comments: _comments,
-                      usernameColor: const Color(0xFFC13584),
+                      scrollController: _scrollController,
+                      usernameColor: const Color(0xFFE1306C),
                     ),
                   ),
-                _BottomBar(
+                _IGBottomBar(
                   isLive: _isLive,
                   onStart: _startLive,
                   onStop: _stopLive,
                   onHeart: () => _heartsKey.currentState?.addHeart(),
+                  bottomPad: botPad,
                 ),
               ],
             ),
@@ -260,101 +314,112 @@ class _InstagramLiveScreenState extends State<InstagramLiveScreen> {
   }
 }
 
-class _BottomBar extends StatelessWidget {
+class _IGBottomBar extends StatelessWidget {
   final bool isLive;
   final VoidCallback onStart;
   final VoidCallback onStop;
   final VoidCallback onHeart;
+  final double bottomPad;
 
-  const _BottomBar({
+  const _IGBottomBar({
     required this.isLive,
     required this.onStart,
     required this.onStop,
     required this.onHeart,
+    required this.bottomPad,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: isLive
-            ? Row(
-                children: [
-                  // Comment box (decorative)
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white12,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      alignment: Alignment.centerLeft,
-                      child: const Text(
-                        'Say something...',
-                        style: TextStyle(color: Colors.white54, fontSize: 14),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Heart button
-                  GestureDetector(
-                    onTap: onHeart,
-                    child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white12,
-                      ),
-                      child: const Icon(Icons.favorite, color: Colors.red, size: 22),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // End live
-                  GestureDetector(
-                    onTap: onStop,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'End',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : Center(
-                child: GestureDetector(
-                  onTap: onStart,
+    final pad = bottomPad > 0 ? bottomPad : 12.0;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14, 6, 14, pad),
+      child: isLive
+          ? Row(
+              children: [
+                // Comment input (decorative)
+                Expanded(
                   child: Container(
-                    width: 160,
-                    height: 52,
+                    height: 42,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF833AB4), Color(0xFFFD1D1D), Color(0xFFFCB045)],
-                      ),
-                      borderRadius: BorderRadius.circular(26),
+                      color: Colors.white10,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: Colors.white24, width: 1),
                     ),
-                    alignment: Alignment.center,
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: const Text(
-                      'Go Live',
+                      'Say something...',
+                      style: TextStyle(color: Colors.white54, fontSize: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Heart
+                GestureDetector(
+                  onTap: onHeart,
+                  child: Container(
+                    width: 42, height: 42,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white12,
+                    ),
+                    child: const Icon(Icons.favorite_border, color: Colors.white, size: 22),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // End live
+                GestureDetector(
+                  onTap: onStop,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE1306C),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: const Text(
+                      'End',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
                       ),
                     ),
                   ),
                 ),
+              ],
+            )
+          : Center(
+              child: GestureDetector(
+                onTap: onStart,
+                child: Container(
+                  width: 170,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF833AB4), Color(0xFFE1306C), Color(0xFFFCB045)],
+                    ),
+                    borderRadius: BorderRadius.circular(26),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE1306C).withOpacity(0.45),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Go Live',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
               ),
-      ),
+            ),
     );
   }
 }
