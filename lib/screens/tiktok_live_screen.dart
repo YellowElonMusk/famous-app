@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import '../models/fake_data.dart';
@@ -19,6 +18,7 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
   bool _isLive = false;
 
   final List<FakeComment> _comments = [];
+  final _drift = ViewerDrift(12800);
   int _viewers = 12800;
   Timer? _commentTimer;
   Timer? _viewerTimer;
@@ -26,7 +26,6 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
 
   final _scrollController = ScrollController();
   final _heartsKey = GlobalKey<FloatingHeartsOverlayState>();
-  final _rng = Random();
 
   @override
   void initState() {
@@ -52,24 +51,25 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
   }
 
   void _startLive() {
-    setState(() {
-      _isLive = true;
-      _viewers = 12800;
+    setState(() => _isLive = true);
+    _scheduleNextComment();
+    _viewerTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      setState(() => _viewers = _drift.tick());
     });
-    _commentTimer = Timer.periodic(
-      Duration(milliseconds: 700 + _rng.nextInt(1000)),
-      (_) => _addComment(),
-    );
-    _viewerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      setState(() => _viewers = fakeViewerCount(12800));
+    _heartTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      _heartsKey.currentState?.addHeart();
     });
-    _heartTimer = Timer.periodic(
-      Duration(milliseconds: 1200 + _rng.nextInt(1500)),
-      (_) => _heartsKey.currentState?.addHeart(),
-    );
     for (int i = 0; i < 5; i++) {
       Future.delayed(Duration(milliseconds: i * 150), _addComment);
     }
+  }
+
+  void _scheduleNextComment() {
+    _commentTimer = Timer(nextCommentDelay(LivePlatform.tiktok), () {
+      if (!mounted || !_isLive) return;
+      _addComment();
+      _scheduleNextComment();
+    });
   }
 
   void _stopLive() {
@@ -81,7 +81,7 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
 
   void _addComment() {
     setState(() {
-      _comments.add(randomComment());
+      _comments.add(randomComment(LivePlatform.tiktok));
       if (_comments.length > 60) _comments.removeAt(0);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -307,6 +307,7 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
                       comments: _comments,
                       scrollController: _scrollController,
                       usernameColor: const Color(0xFF69C9D0),
+                      giftAccent: const Color(0xFFFF004F),
                     ),
                   ),
                 _TikTokBottomBar(

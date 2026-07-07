@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'instagram_live_screen.dart';
 import 'tiktok_live_screen.dart';
+import 'twitch_live_screen.dart';
 
 class SelectionScreen extends StatelessWidget {
   const SelectionScreen({super.key});
@@ -56,6 +57,20 @@ class SelectionScreen extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const TikTokLiveScreen()),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _PlatformButton(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6441A5), Color(0xFF9146FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                icon: Icons.videogame_asset,
+                label: 'Twitch Live',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TwitchLiveScreen()),
                 ),
               ),
             ],
