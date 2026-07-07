@@ -208,18 +208,18 @@ class ViewerDrift {
   final int ceil;
 
   ViewerDrift(this.value)
-      : floor = value - 900,
-        ceil = value + 1600;
+      : floor = value - 1800,
+        ceil = value + 3200;
 
   int tick() {
     final roll = _rng.nextInt(100);
     int delta;
     if (roll < 6) {
-      delta = 40 + _rng.nextInt(120); // small raid
+      delta = 80 + _rng.nextInt(240); // small raid
     } else if (roll < 12) {
-      delta = -(30 + _rng.nextInt(90)); // small dip
+      delta = -(60 + _rng.nextInt(180)); // small dip
     } else {
-      delta = _rng.nextInt(25) - 10; // gentle drift, upward bias
+      delta = _rng.nextInt(50) - 20; // gentle drift, upward bias
     }
     value = (value + delta).clamp(floor, ceil);
     return value;
@@ -238,9 +238,9 @@ String formatViewers(int count) {
 Duration nextCommentDelay(LivePlatform p) {
   final fast = p == LivePlatform.twitch; // twitch chat is fastest
   final roll = _rng.nextInt(100);
-  if (roll < 15) return Duration(milliseconds: 120 + _rng.nextInt(250)); // burst
-  if (roll < 85) {
-    return Duration(milliseconds: (fast ? 350 : 600) + _rng.nextInt(900));
+  if (roll < 20) return Duration(milliseconds: 80 + _rng.nextInt(180)); // burst
+  if (roll < 88) {
+    return Duration(milliseconds: (fast ? 200 : 300) + _rng.nextInt(500));
   }
-  return Duration(milliseconds: 1800 + _rng.nextInt(2200)); // lull
+  return Duration(milliseconds: 1200 + _rng.nextInt(1400)); // lull
 }

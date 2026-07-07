@@ -18,8 +18,8 @@ class _InstagramLiveScreenState extends State<InstagramLiveScreen> {
   bool _isLive = false;
 
   final List<FakeComment> _comments = [];
-  final _drift = ViewerDrift(12400);
-  int _viewers = 12400;
+  final _drift = ViewerDrift(24800);
+  int _viewers = 24800;
   Timer? _commentTimer;
   Timer? _viewerTimer;
   Timer? _heartTimer;
@@ -56,7 +56,7 @@ class _InstagramLiveScreenState extends State<InstagramLiveScreen> {
     _viewerTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
       setState(() => _viewers = _drift.tick());
     });
-    _heartTimer = Timer.periodic(const Duration(milliseconds: 1800), (_) {
+    _heartTimer = Timer.periodic(const Duration(milliseconds: 900), (_) {
       _heartsKey.currentState?.addHeart();
     });
     for (int i = 0; i < 4; i++) {

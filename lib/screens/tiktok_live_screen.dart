@@ -18,8 +18,8 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
   bool _isLive = false;
 
   final List<FakeComment> _comments = [];
-  final _drift = ViewerDrift(12800);
-  int _viewers = 12800;
+  final _drift = ViewerDrift(25600);
+  int _viewers = 25600;
   Timer? _commentTimer;
   Timer? _viewerTimer;
   Timer? _heartTimer;
@@ -56,7 +56,7 @@ class _TikTokLiveScreenState extends State<TikTokLiveScreen> {
     _viewerTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
       setState(() => _viewers = _drift.tick());
     });
-    _heartTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+    _heartTimer = Timer.periodic(const Duration(milliseconds: 750), (_) {
       _heartsKey.currentState?.addHeart();
     });
     for (int i = 0; i < 5; i++) {

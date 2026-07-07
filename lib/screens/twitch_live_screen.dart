@@ -20,8 +20,8 @@ class _TwitchLiveScreenState extends State<TwitchLiveScreen> {
   bool _isLive = false;
 
   final List<FakeComment> _comments = [];
-  final _drift = ViewerDrift(11900);
-  int _viewers = 11900;
+  final _drift = ViewerDrift(23800);
+  int _viewers = 23800;
   Duration _uptime = Duration.zero;
 
   Timer? _commentTimer;
@@ -65,7 +65,7 @@ class _TwitchLiveScreenState extends State<TwitchLiveScreen> {
     _viewerTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
       setState(() => _viewers = _drift.tick());
     });
-    _heartTimer = Timer.periodic(const Duration(milliseconds: 2600), (_) {
+    _heartTimer = Timer.periodic(const Duration(milliseconds: 1300), (_) {
       _heartsKey.currentState?.addHeart();
     });
     _uptimeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
