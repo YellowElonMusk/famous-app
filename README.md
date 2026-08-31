@@ -1,6 +1,6 @@
 # fakelive
 
-A new Flutter project.
+A new Flutter project. This app simulates a fake Instagram or TikTok live with 20k viewers and randomly generated live comments. I saw someone on YouTube pick up girls in a club with his vibe-coded fake live app; I thought it was a fun idea and made it myself, but as someone with great morals, I would never use it to trick anyone. It's entirely for personal use only.
 
 ## Getting Started
 
